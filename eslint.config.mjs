@@ -42,6 +42,7 @@ export default tseslint.config(
           trailingComma: 'all',
           tabWidth: 2,
           semi: true,
+          endOfLine: 'off',
         },
       ],
     },
