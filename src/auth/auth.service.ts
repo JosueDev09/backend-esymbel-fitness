@@ -1,31 +1,33 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { Role } from './enums/role.enum';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class AuthService {
-  // Simulación de base de datos (en producción usar TypeORM, Prisma, etc.)
-  private users: Array<{
-    id: string;
-    email: string;
-    password: string;
-    name: string;
-    roles: Role[];
-  }> = [];
-
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private jwtService: JwtService,
+  ) {}
 
   async register(registerDto: RegisterDto) {
     // Verificar si el usuario ya existe
-    const existingUser = this.users.find(
-      (user) => user.email === registerDto.email,
-    );
+    const existingUser = await this.userRepository.findOne({
+      where: { email: registerDto.email },
+    });
 
     if (existingUser) {
-      throw new UnauthorizedException('El usuario ya existe');
+      throw new ConflictException('El usuario ya existe');
     }
 
     // Hash de la contraseña
@@ -35,38 +37,40 @@ export class AuthService {
     const userRoles = registerDto.roles || [Role.USER];
 
     // Crear nuevo usuario
-    const newUser = {
-      id: Date.now().toString(),
+    const newUser = this.userRepository.create({
       email: registerDto.email,
       password: hashedPassword,
       name: registerDto.name,
       roles: userRoles,
-    };
+    });
 
-    this.users.push(newUser);
+    // Guardar en la base de datos
+    const savedUser = await this.userRepository.save(newUser);
 
     // Generar token con roles
     const payload = {
-      sub: newUser.id,
-      email: newUser.email,
-      roles: newUser.roles,
+      sub: savedUser.id.toString(),
+      email: savedUser.email,
+      roles: savedUser.roles,
     };
     const token = this.jwtService.sign(payload);
 
     return {
       access_token: token,
       user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        roles: newUser.roles,
+        id: savedUser.id,
+        email: savedUser.email,
+        name: savedUser.name,
+        roles: savedUser.roles,
       },
     };
   }
 
   async login(loginDto: LoginDto) {
-    // Buscar usuario
-    const user = this.users.find((user) => user.email === loginDto.email);
+    // Buscar usuario en la base de datos
+    const user = await this.userRepository.findOne({
+      where: { email: loginDto.email },
+    });
 
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -84,7 +88,7 @@ export class AuthService {
 
     // Generar token con roles
     const payload = {
-      sub: user.id,
+      sub: user.id.toString(),
       email: user.email,
       roles: user.roles,
     };
@@ -102,7 +106,10 @@ export class AuthService {
   }
 
   async validateUser(userId: string) {
-    const user = this.users.find((user) => user.id === userId);
+    const user = await this.userRepository.findOne({
+      where: { id: parseInt(userId) },
+    });
+
     if (!user) {
       throw new UnauthorizedException('Usuario no encontrado');
     }
