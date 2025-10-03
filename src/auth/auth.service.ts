@@ -22,6 +22,7 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     // Verificar si el usuario ya existe
+    // Debugging line
     const existingUser = await this.userRepository.findOne({
       where: { email: registerDto.email },
     });
@@ -68,9 +69,11 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     // Buscar usuario en la base de datos
+    //console.log('Login DTO:', loginDto); // Debugging line
     const user = await this.userRepository.findOne({
       where: { email: loginDto.email },
     });
+    //console.log('Usuario encontrado:', user); // Debugging line
 
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -81,6 +84,7 @@ export class AuthService {
       loginDto.password,
       user.password,
     );
+    // console.log('¿Contraseña válida?:', isPasswordValid); // Debugging line
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -93,6 +97,7 @@ export class AuthService {
       roles: user.roles,
     };
     const token = this.jwtService.sign(payload);
+    console.log('Token generado:', token); // Debugging line
 
     return {
       access_token: token,

@@ -19,8 +19,8 @@ import { User } from './entities/user.entity';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_NAME'),
         entities: [User],
-        synchronize: true, // Solo para desarrollo - cambiar a false en producción
-        logging: true, // Para ver las queries SQL en desarrollo
+        synchronize: false, // Solo para desarrollo - cambiar a false en producción
+        logging: false, // Para ver las queries SQL en desarrollo
       }),
       inject: [ConfigService],
     }),

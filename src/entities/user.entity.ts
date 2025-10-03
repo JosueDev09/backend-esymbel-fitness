@@ -7,26 +7,31 @@ import {
 } from 'typeorm';
 import { Role } from '../auth/enums/role.enum';
 
-@Entity('users')
+@Entity('tbUsers')
 export class User {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'intId' })
   id: number;
 
-  @Column({ unique: true })
+  @Column({ name: 'strEmail', unique: true })
   email: string;
 
-  @Column()
+  @Column({ name: 'strPassword' })
   password: string;
 
-  @Column()
+  @Column({ name: 'strName' })
   name: string;
 
-  @Column('simple-array', { default: () => `'${Role.USER}'` })
+  @Column({
+    name: 'strRoles',
+    type: 'varchar',
+    length: 500,
+    default: Role.USER,
+  })
   roles: Role[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'datCreatedAt' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'datUpdatedAt' })
   updatedAt: Date;
 }
